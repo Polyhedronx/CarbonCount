@@ -1,0 +1,265 @@
+# ===================================
+# Python / FastAPI
+# ===================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# ===================================
+# Environment Variables
+# ===================================
+
+# Environment variables (敏感配置)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# ===================================
+# Node.js / Vue.js / Vite
+# ===================================
+
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+
+# Vite
+.vite/
+vite.config.*.timestamp-*
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Cache
+.cache/
+.parcel-cache/
+
+# ===================================
+# IDE / Editors
+# ===================================
+
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# IntelliJ IDEA / PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ===================================
+# Operating System
+# ===================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===================================
+# Database
+# ===================================
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# PostgreSQL
+*.sql.backup
+*.sql.dump
+
+# ===================================
+# Docker
+# ===================================
+
+# Docker volumes (如果需要)
+# *.log from containers
+
+# ===================================
+# Logs
+# ===================================
+
+# Log files
+*.log
+logs/
+*.log.*
+
+# ===================================
+# Temporary files
+# ===================================
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*~
+.cache/
+
+# ===================================
+# Project Specific
+# ===================================
+
+# 前端构建输出 (已在 dist/ 中忽略)
+# frontend/dist/
+
+# 后端临时文件
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+
+# 测试覆盖率报告
+.coverage
+htmlcov/
+.pytest_cache/
+
+# 文档生成 (如果使用)
+docs/_build/
+docs/.doctrees/
+
+# 本地配置覆盖
+local_settings.py
+settings_local.py
