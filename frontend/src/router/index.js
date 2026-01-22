@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
+import ZoneDetail from '../views/ZoneDetail.vue'
 import { useAuthStore } from '../stores/auth'
 
 const routes = [
@@ -15,6 +16,13 @@ const routes = [
     name: 'Dashboard',
     component: Dashboard,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/zones/:id',
+    name: 'ZoneDetail',
+    component: ZoneDetail,
+    meta: { requiresAuth: true },
+    props: true
   },
   {
     path: '/:pathMatch(.*)*',

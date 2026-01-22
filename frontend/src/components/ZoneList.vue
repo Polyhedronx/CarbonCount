@@ -15,8 +15,7 @@
         v-for="zone in zones"
         :key="zone.id"
         class="zone-item"
-        :class="{ active: selectedZoneId === zone.id }"
-        @click="$emit('select', zone)"
+        @click="handleItemClick(zone, $event)"
       >
         <div class="zone-header">
           <h4>{{ zone.name }}</h4>
@@ -40,18 +39,6 @@
           <div class="info-item">
             <span class="label">创建时间:</span>
             <span class="value">{{ formatDate(zone.created_at) }}</span>
-          </div>
-        </div>
-        
-        <!-- 图表区域 -->
-        <div v-if="selectedZoneId === zone.id && chartData" class="zone-charts">
-          <div class="chart-container">
-            <h5>NDVI历史趋势</h5>
-            <v-chart :option="ndviOption" style="height: 150px;" />
-          </div>
-          <div class="chart-container">
-            <h5>碳吸收量历史趋势</h5>
-            <v-chart :option="carbonOption" style="height: 150px;" />
           </div>
         </div>
         
@@ -79,6 +66,7 @@
             删除
           </el-button>
         </div>
+        
       </div>
     </div>
   </div>
@@ -86,35 +74,27 @@
 
 <script>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Loading } from '@element-plus/icons-vue'
-import VChart from 'vue-echarts'
 
 export default {
   name: 'ZoneList',
   components: {
-    Loading,
-    VChart
+    Loading
   },
   props: {
     zones: {
       type: Array,
       default: () => []
     },
-    selectedZoneId: {
-      type: Number,
-      default: null
-    },
     loading: {
       type: Boolean,
       default: false
-    },
-    chartData: {
-      type: Object,
-      default: null
     }
   },
-  emits: ['select', 'toggle-status', 'edit', 'delete'],
-  setup(props) {
+  emits: ['toggle-status', 'edit', 'delete'],
+  setup(props, { emit }) {
+    const router = useRouter()
     const formatArea = (area) => {
       if (area >= 10000) {
         return `${(area / 10000).toFixed(2)} 公顷`
@@ -126,109 +106,28 @@ export default {
       return new Date(dateString).toLocaleDateString('zh-CN')
     }
 
-    // NDVI图表配置
-    const ndviOption = computed(() => {
-      const data = props.chartData
-      if (!data || !data.timestamps || data.timestamps.length === 0) {
-        return {
-          title: { 
-            text: '暂无数据', 
-            left: 'center', 
-            top: 'middle', 
-            textStyle: { fontSize: 14, color: '#999' } 
-          }
-        }
+    // 处理区域项点击事件
+    const handleItemClick = (zone, event) => {
+      // 检查点击目标是否是按钮或按钮内部元素
+      const target = event.target
+      const isButtonClick = target.closest('.zone-actions') ||
+                          target.closest('.el-button') ||
+                          target.closest('button')
+
+      // 如果是按钮点击，不触发路由跳转
+      if (isButtonClick) {
+        return
       }
 
-      return {
-        tooltip: {
-          trigger: 'axis',
-          formatter: (params) => {
-            const param = params[0]
-            return `${param.name}<br/>${param.seriesName}: ${param.value.toFixed(4)}`
-          }
-        },
-        grid: {
-          left: '10%',
-          right: '10%',
-          bottom: '15%',
-          top: '10%'
-        },
-        xAxis: {
-          type: 'category',
-          data: data.timestamps.map(t => new Date(t).toLocaleDateString('zh-CN')),
-          axisLabel: { rotate: 45, fontSize: 10 }
-        },
-        yAxis: {
-          type: 'value',
-          name: 'NDVI',
-          min: 0,
-          max: 1
-        },
-        series: [{
-          name: 'NDVI',
-          type: 'line',
-          data: data.ndvi_values,
-          smooth: true,
-          itemStyle: { color: '#67c23a' },
-          areaStyle: { color: 'rgba(103, 194, 58, 0.2)' }
-        }]
-      }
-    })
+      // 跳转到监测区详情页
+      router.push(`/zones/${zone.id}`)
+    }
 
-    // 碳吸收量图表配置
-    const carbonOption = computed(() => {
-      const data = props.chartData
-      if (!data || !data.timestamps || data.timestamps.length === 0) {
-        return {
-          title: { 
-            text: '暂无数据', 
-            left: 'center', 
-            top: 'middle', 
-            textStyle: { fontSize: 14, color: '#999' } 
-          }
-        }
-      }
-
-      return {
-        tooltip: {
-          trigger: 'axis',
-          formatter: (params) => {
-            const param = params[0]
-            return `${param.name}<br/>${param.seriesName}: ${param.value.toFixed(6)} 吨/天`
-          }
-        },
-        grid: {
-          left: '10%',
-          right: '10%',
-          bottom: '15%',
-          top: '10%'
-        },
-        xAxis: {
-          type: 'category',
-          data: data.timestamps.map(t => new Date(t).toLocaleDateString('zh-CN')),
-          axisLabel: { rotate: 45, fontSize: 10 }
-        },
-        yAxis: {
-          type: 'value',
-          name: '碳吸收量 (吨/天)'
-        },
-        series: [{
-          name: '碳吸收量',
-          type: 'line',
-          data: data.carbon_values,
-          smooth: true,
-          itemStyle: { color: '#409eff' },
-          areaStyle: { color: 'rgba(64, 158, 255, 0.2)' }
-        }]
-      }
-    })
 
     return {
       formatArea,
       formatDate,
-      ndviOption,
-      carbonOption
+      handleItemClick
     }
   }
 }
@@ -263,8 +162,8 @@ export default {
   padding: 15px;
   border: 1px solid #e6e6e6;
   border-radius: 8px;
-  cursor: pointer;
   transition: all 0.2s;
+  position: relative;
 }
 
 .zone-item:hover {
@@ -282,6 +181,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+  cursor: pointer;
 }
 
 .zone-header h4 {
@@ -311,6 +211,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  cursor: pointer;
 }
 
 .info-item {
@@ -328,22 +229,8 @@ export default {
   font-weight: 500;
 }
 
-.zone-charts {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #e6e6e6;
-}
 
-.chart-container {
-  margin-bottom: 15px;
-}
 
-.chart-container h5 {
-  margin: 0 0 8px 0;
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
-}
 
 .zone-actions {
   margin-top: 10px;
@@ -352,10 +239,14 @@ export default {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
 }
 
 .zone-actions .el-button {
   flex: 1;
   min-width: 60px;
+  pointer-events: auto;
 }
 </style>

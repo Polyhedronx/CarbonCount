@@ -21,12 +21,10 @@
       />
 
       <!-- 监测区列表 -->
-      <ZoneList 
+      <ZoneList
         :zones="zones"
-        :selected-zone-id="selectedZone?.id"
         :loading="zonesLoading"
-        :chart-data="selectedZone ? zoneChartData[selectedZone.id] : null"
-        @select="selectZone"
+        @select="goToZoneDetail"
         @toggle-status="toggleZoneStatus"
         @edit="editZone"
         @delete="deleteZone"
@@ -35,14 +33,13 @@
 
     <!-- 右侧地图区域 -->
     <div class="map-container">
-      <MapView 
+      <MapView
         ref="mapViewRef"
         :zones="zones"
-        :selected-zone-id="selectedZone?.id"
         :is-creating-zone="isCreatingZone"
         :temp-points="tempPoints"
         @map-click="handleMapClick"
-        @zone-select="selectZone"
+        @zone-select="goToZoneDetail"
         @map-ready="onMapReady"
       />
     </div>
@@ -80,13 +77,11 @@ export default {
 
     // 响应式数据
     const zones = ref([])
-    const selectedZone = ref(null)
     const zonesLoading = ref(false)
     const currentPrice = ref('--')
     const priceTimestamp = ref('')
     const isCreatingZone = ref(false)
     const tempPoints = ref([])
-    const zoneChartData = ref({})
     const mapViewRef = ref(null)
 
     // 用户信息
@@ -100,12 +95,6 @@ export default {
       ])
     }
 
-    // 监听选中区域变化，加载图表数据
-    watch(selectedZone, async (newZone) => {
-      if (newZone && !zoneChartData.value[newZone.id]) {
-        await loadZoneChartData(newZone.id)
-      }
-    })
 
     // 加载监测区
     const loadZones = async () => {
@@ -121,15 +110,6 @@ export default {
       }
     }
 
-    // 加载区域图表数据
-    const loadZoneChartData = async (zoneId) => {
-      try {
-        const data = await measurementsAPI.getZoneChartData(zoneId)
-        zoneChartData.value[zoneId] = data
-      } catch (error) {
-        console.error('加载图表数据失败:', error)
-      }
-    }
 
     // 加载当前价格
     const loadCurrentPrice = async () => {
@@ -216,18 +196,9 @@ export default {
       // 地图组件会自动清理临时图形
     }
 
-    // 选择监测区
-    const selectZone = (zone) => {
-      // 如果点击的是已选中的监测区，则取消选择
-      if (selectedZone.value?.id === zone.id) {
-        selectedZone.value = null
-      } else {
-        selectedZone.value = zone
-        // 加载图表数据
-        if (!zoneChartData.value[zone.id]) {
-          loadZoneChartData(zone.id)
-        }
-      }
+    // 跳转到监测区详情页
+    const goToZoneDetail = (zone) => {
+      router.push(`/zones/${zone.id}`)
     }
 
     // 刷新价格
@@ -308,13 +279,6 @@ export default {
           zones.value.splice(index, 1)
         }
         
-        // 清除选中状态
-        if (selectedZone.value?.id === zone.id) {
-          selectedZone.value = null
-        }
-        
-        // 清除图表数据
-        delete zoneChartData.value[zone.id]
         
         ElMessage.success('监测区已删除')
       } catch (error) {
@@ -330,20 +294,17 @@ export default {
 
     return {
       zones,
-      selectedZone,
       zonesLoading,
       currentPrice,
       priceTimestamp,
       isCreatingZone,
       tempPoints,
-      zoneChartData,
       mapViewRef,
       user,
       handleMapClick,
       startCreateZone,
       finishCreateZone,
       cancelCreateZone,
-      selectZone,
       refreshPrice,
       handleLogout,
       toggleZoneStatus,

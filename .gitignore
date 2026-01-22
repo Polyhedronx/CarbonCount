@@ -130,6 +130,12 @@ lerna-debug.log*
 *.ipr
 out/
 
+# Cursor
+.cursor/
+
+# Claude Code
+.claude/
+
 # Sublime Text
 *.sublime-project
 *.sublime-workspace
