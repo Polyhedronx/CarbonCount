@@ -68,6 +68,7 @@
 <script setup>
 import { computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { Download, Loading, ArrowLeft } from '@element-plus/icons-vue'
 import ZoneInfoCard from '../components/ZoneInfoCard.vue'
 import ZoneChartCard from '../components/ZoneChartCard.vue'
@@ -102,7 +103,7 @@ const {
 } = useZoneDetail(zoneId)
 
 const { ndviOption, carbonOption } = useChartConfig(chartData)
-const { exporting, exportToPDF } = usePDFExport()
+const { exporting, exportReportToPDF } = usePDFExport()
 
 // 处理返回
 const handleGoBack = () => {
@@ -117,8 +118,27 @@ const handleGoBack = () => {
 
 // 处理PDF导出
 const handleExportPDF = async () => {
-  const filename = `碳汇监测区-${zone.value?.name || zoneId.value}.pdf`
-  await exportToPDF('.detail-content', filename)
+  if (!zone.value) {
+    ElMessage.warning('监测区数据未加载，请稍候再试')
+    return
+  }
+
+  try {
+    // 获取图表配置的实际值（computed值）
+    const ndviOpt = ndviOption.value
+    const carbonOpt = carbonOption.value
+    
+    await exportReportToPDF(
+      zone.value,
+      chartData.value,
+      ndviOpt,
+      carbonOpt,
+      `空天地一体化碳汇监测报告-${zone.value.name || zoneId.value}-${new Date().toISOString().split('T')[0]}.pdf`
+    )
+  } catch (error) {
+    console.error('导出PDF失败:', error)
+    // 错误已在usePDFExport中处理
+  }
 }
 
 // 组件挂载时加载数据
