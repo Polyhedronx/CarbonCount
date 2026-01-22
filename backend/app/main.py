@@ -25,13 +25,37 @@ Base.metadata.create_all(bind=engine)
 
 def run_scheduler():
     """运行定时任务调度器"""
-    # 每6小时生成一次监测数据
-    schedule.every(6).hours.do(generate_measurements_for_active_zones)
+    # #region agent log
+    import json, time, urllib.request
+    def _agent_log(payload):
+        try:
+            urllib.request.urlopen(
+                urllib.request.Request(
+                    "http://host.docker.internal:7242/ingest/2b967610-c5aa-4d90-8694-335f6e0cdb1b",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                ),
+                timeout=0.5,
+            )
+        except Exception:
+            pass
+    _agent_log({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"backend/app/main.py:run_scheduler","message":"run_scheduler called","data":{},"timestamp":int(time.time()*1000)})
+    # #endregion
+    # 每12小时生成一次监测数据（每天2次）
+    schedule.every(12).hours.do(generate_measurements_for_active_zones)
+    # #region agent log
+    try:
+        jobs = schedule.get_jobs()
+        _agent_log({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"backend/app/main.py:run_scheduler","message":"Schedule jobs registered (after measurement job)","data":{"job_count":len(jobs)},"timestamp":int(time.time()*1000)})
+    except Exception:
+        pass
+    # #endregion
     
     # 每小时更新一次碳汇价格
     schedule.every().hour.do(update_price_hourly)
     
-    logger.info("Measurement data scheduler started (runs every 6 hours)")
+    logger.info("Measurement data scheduler started (runs every 12 hours, twice per day)")
     logger.info("Price update scheduler started (runs every hour)")
     
     while True:
@@ -45,17 +69,31 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     # 启动时
     logger.info("Starting CarbonCount API...")
+    # #region agent log
+    import json, time, urllib.request
+    def _agent_log(payload):
+        try:
+            urllib.request.urlopen(
+                urllib.request.Request(
+                    "http://host.docker.internal:7242/ingest/2b967610-c5aa-4d90-8694-335f6e0cdb1b",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                ),
+                timeout=0.5,
+            )
+        except Exception:
+            pass
+    _agent_log({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"backend/app/main.py:lifespan","message":"lifespan startup called","data":{},"timestamp":int(time.time()*1000)})
+    # #endregion
     
     # 启动后台任务线程
     scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
     scheduler_thread.start()
     logger.info("Background scheduler thread started")
     
-    # 立即生成一次数据（用于测试）
-    try:
-        generate_measurements_for_active_zones()
-    except Exception as e:
-        logger.error(f"Error in initial measurement generation: {e}")
+    # 注意：不再在启动时立即生成监测数据。
+    # 监测数据应仅由定时任务（每12小时）生成，以避免重启服务时产生密集时间戳的数据。
     
     yield
     

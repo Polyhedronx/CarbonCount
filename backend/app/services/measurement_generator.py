@@ -49,12 +49,37 @@ def generate_mock_measurement_for_zone(db: Session, zone: CarbonZone) -> ZoneMea
 
 def generate_measurements_for_active_zones():
     """为所有活跃的监测区生成模拟监测数据"""
+    # #region agent log
+    import json, time, urllib.request, traceback
+    def _agent_log(payload):
+        try:
+            urllib.request.urlopen(
+                urllib.request.Request(
+                    "http://host.docker.internal:7242/ingest/2b967610-c5aa-4d90-8694-335f6e0cdb1b",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                ),
+                timeout=0.5,
+            )
+        except Exception:
+            pass
+    try:
+        stack = traceback.extract_stack()
+        caller = stack[-3].name if len(stack) >= 3 else "unknown"
+    except Exception:
+        caller = "unknown"
+    _agent_log({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"backend/app/services/measurement_generator.py:generate_measurements_for_active_zones","message":"generate_measurements_for_active_zones called","data":{"caller":caller},"timestamp":int(time.time()*1000)})
+    # #endregion
     db = SessionLocal()
     try:
         # 获取所有活跃的监测区
         active_zones = db.query(CarbonZone).filter(
             CarbonZone.status == ZoneStatus.active
         ).all()
+        # #region agent log
+        _agent_log({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"backend/app/services/measurement_generator.py:generate_measurements_for_active_zones","message":"Active zones found","data":{"active_zone_count":len(active_zones),"zone_ids":[z.id for z in active_zones]},"timestamp":int(time.time()*1000)})
+        # #endregion
 
         if not active_zones:
             logger.info("No active zones found, skipping measurement generation")
@@ -69,6 +94,9 @@ def generate_measurements_for_active_zones():
                 logger.error(f"Error generating measurement for zone {zone.id}: {e}")
 
         logger.info(f"Generated measurements for {generated_count} active zones")
+        # #region agent log
+        _agent_log({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"backend/app/services/measurement_generator.py:generate_measurements_for_active_zones","message":"generate_measurements_for_active_zones completed","data":{"generated_count":generated_count},"timestamp":int(time.time()*1000)})
+        # #endregion
     except Exception as e:
         logger.error(f"Error in generate_measurements_for_active_zones: {e}")
     finally:

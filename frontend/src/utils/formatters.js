@@ -38,7 +38,7 @@ export const formatDate = (dateString) => {
  */
 export const formatChartDate = (value) => {
   const date = new Date(value)
-  return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`
+  return `${date.getUTCMonth() + 1}/${date.getUTCDate()} ${date.getUTCHours()}:${date.getUTCMinutes().toString().padStart(2, '0')}`
 }
 
 /**
@@ -51,8 +51,8 @@ export const formatChartDate = (value) => {
  */
 export const formatChartTooltip = (dateValue, seriesName, value, unit = '') => {
   const date = new Date(dateValue)
-  const dateStr = date.toLocaleDateString('zh-CN')
-  const timeStr = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  const dateStr = date.toLocaleDateString('zh-CN', { timeZone: 'UTC' })
+  const timeStr = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
   const valueStr = unit ? `${value.toFixed(6)} ${unit}` : value.toFixed(4)
   return `${dateStr} ${timeStr}<br/>${seriesName}: ${valueStr}`
 }

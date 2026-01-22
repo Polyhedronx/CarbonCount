@@ -30,7 +30,7 @@ def get_zone_stats(db: Session, zone_id: int) -> ZoneStats:
     )
 
 
-def get_zone_measurements_chart_data(db: Session, zone_id: int, limit: int = 100):
+def get_zone_measurements_chart_data(db: Session, zone_id: int, limit: int = 10):
     """获取区域测量数据的图表数据"""
     measurements = db.query(ZoneMeasurement).filter(
         ZoneMeasurement.zone_id == zone_id

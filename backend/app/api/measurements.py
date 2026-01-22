@@ -41,6 +41,7 @@ async def get_zone_measurements(
 @router.get("/zone/{zone_id}/chart", response_model=MeasurementChartData)
 async def get_zone_chart_data(
     zone_id: int,
+    limit: int = 10,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -57,7 +58,7 @@ async def get_zone_chart_data(
             detail="Zone not found or access denied"
         )
 
-    chart_data = get_zone_measurements_chart_data(db, zone_id)
+    chart_data = get_zone_measurements_chart_data(db, zone_id, limit)
     return chart_data
 
 
