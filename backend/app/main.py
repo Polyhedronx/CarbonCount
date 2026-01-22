@@ -14,6 +14,7 @@ from .core.dependencies import get_current_user, get_current_admin
 from .models import Base, User
 from .api import auth, carbon_zones, measurements, prices
 from .services.measurement_generator import generate_measurements_for_active_zones
+from .services.price_service import update_price_hourly
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,7 +28,11 @@ def run_scheduler():
     # 每6小时生成一次监测数据
     schedule.every(6).hours.do(generate_measurements_for_active_zones)
     
+    # 每小时更新一次碳汇价格
+    schedule.every().hour.do(update_price_hourly)
+    
     logger.info("Measurement data scheduler started (runs every 6 hours)")
+    logger.info("Price update scheduler started (runs every hour)")
     
     while True:
         schedule.run_pending()

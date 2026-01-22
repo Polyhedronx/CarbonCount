@@ -5,7 +5,10 @@ const API_BASE_URL = '/api'
 
 export const pricesAPI = {
   getCurrentPrice: async () => {
-    const response = await axios.get(`${API_BASE_URL}/prices/current`)
+    const response = await axios.get(`${API_BASE_URL}/prices/current`, {
+      params: { _t: Date.now() }, // 添加时间戳防止缓存
+      headers: { 'Cache-Control': 'no-cache' }
+    })
     return response.data
   },
 

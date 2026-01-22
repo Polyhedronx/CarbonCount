@@ -47,7 +47,7 @@
 </template>
 
 <script>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
@@ -83,6 +83,7 @@ export default {
     const isCreatingZone = ref(false)
     const tempPoints = ref([])
     const mapViewRef = ref(null)
+    const pricePollingTimer = ref(null)
 
     // 用户信息
     const user = computed(() => authStore.user)
@@ -115,8 +116,16 @@ export default {
     const loadCurrentPrice = async () => {
       try {
         const data = await pricesAPI.getCurrentPrice()
+        const oldPrice = currentPrice.value
         currentPrice.value = data.price
         priceTimestamp.value = new Date(data.timestamp).toLocaleString('zh-CN')
+        
+        // 如果价格发生变化，给出提示（仅在非首次加载时）
+        if (oldPrice !== '--' && oldPrice !== data.price) {
+          const priceChange = parseFloat(data.price) - parseFloat(oldPrice)
+          const changeText = priceChange > 0 ? `上涨 ${priceChange.toFixed(2)}` : `下跌 ${Math.abs(priceChange).toFixed(2)}`
+          ElMessage.info(`碳汇价格已更新：${changeText} 元/吨`)
+        }
       } catch (error) {
         console.error('加载价格失败:', error)
         // 尝试生成模拟数据
@@ -126,6 +135,25 @@ export default {
         } catch (mockError) {
           console.error('生成模拟价格失败:', mockError)
         }
+      }
+    }
+
+    // 启动价格轮询
+    const startPricePolling = () => {
+      // 每5分钟轮询一次价格（比后端更新频率更短，确保及时获取）
+      pricePollingTimer.value = setInterval(() => {
+        // 只在页面可见时轮询
+        if (!document.hidden) {
+          loadCurrentPrice()
+        }
+      }, 5 * 60 * 1000) // 5分钟 = 300000毫秒
+    }
+
+    // 停止价格轮询
+    const stopPricePolling = () => {
+      if (pricePollingTimer.value) {
+        clearInterval(pricePollingTimer.value)
+        pricePollingTimer.value = null
       }
     }
 
@@ -203,8 +231,16 @@ export default {
 
     // 刷新价格
     const refreshPrice = async () => {
-      await loadCurrentPrice()
-      ElMessage.success('价格已更新')
+      try {
+        // 先生成新的价格数据
+        await pricesAPI.generateMockPrice()
+        // 然后加载最新价格
+        await loadCurrentPrice()
+        ElMessage.success('价格已更新')
+      } catch (error) {
+        console.error('刷新价格失败:', error)
+        ElMessage.error('刷新价格失败')
+      }
     }
 
     // 登出
@@ -289,6 +325,14 @@ export default {
 
     // 初始化
     init()
+    
+    // 启动价格轮询
+    startPricePolling()
+    
+    // 组件卸载时清理定时器
+    onUnmounted(() => {
+      stopPricePolling()
+    })
 
     return {
       zones,

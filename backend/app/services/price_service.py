@@ -1,7 +1,11 @@
 import random
+import logging
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from ..models import CarbonPrice
+from ..core.database import SessionLocal
+
+logger = logging.getLogger(__name__)
 
 
 def get_current_price(db: Session) -> CarbonPrice:
@@ -47,3 +51,16 @@ def generate_historical_prices(db: Session, days: int = 30):
 
     db.commit()
     return prices
+
+
+def update_price_hourly():
+    """每小时更新碳汇价格数据"""
+    db = SessionLocal()
+    try:
+        logger.info("Starting hourly price update...")
+        price = generate_mock_price(db)
+        logger.info(f"Price updated successfully: {price.price} 元/吨 at {price.timestamp}")
+    except Exception as e:
+        logger.error(f"Error in hourly price update: {e}")
+    finally:
+        db.close()
