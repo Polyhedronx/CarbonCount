@@ -66,7 +66,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Download, Loading, ArrowLeft } from '@element-plus/icons-vue'
 import ZoneInfoCard from '../components/ZoneInfoCard.vue'
@@ -106,12 +106,13 @@ const { exporting, exportToPDF } = usePDFExport()
 
 // 处理返回
 const handleGoBack = () => {
-  // 如果有历史记录则返回，否则跳转到首页
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    router.push('/')
-  }
+  // 使用 router.push 跳转到首页
+  router.push('/').catch(err => {
+    // 忽略重复导航错误
+    if (err.name !== 'NavigationDuplicated') {
+      console.error('Navigation error:', err)
+    }
+  })
 }
 
 // 处理PDF导出

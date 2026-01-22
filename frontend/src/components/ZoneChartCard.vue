@@ -16,7 +16,24 @@
 </template>
 
 <script setup>
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart } from 'echarts/charts'
+import {
+  TooltipComponent,
+  GridComponent,
+  TitleComponent
+} from 'echarts/components'
 import VChart from 'vue-echarts'
+
+// 注册必要的组件
+use([
+  CanvasRenderer,
+  LineChart,
+  TooltipComponent,
+  GridComponent,
+  TitleComponent
+])
 
 const props = defineProps({
   title: {
