@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from ..core.database import get_db
 from ..core.security import verify_password, create_access_token, get_password_hash
 from ..core.config import settings
+from ..core.dependencies import get_current_user
 from ..models import User, UserRole
 from ..schemas import UserCreate, User as UserSchema, Token, LoginRequest
 
@@ -78,6 +79,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=UserSchema)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """获取当前登录用户信息"""
+    return current_user
 
 
 def _validate_password_complexity(password: str) -> bool:

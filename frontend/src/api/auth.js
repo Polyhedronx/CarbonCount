@@ -24,5 +24,10 @@ export const authAPI = {
   register: async (userData) => {
     const response = await axios.post(`${API_BASE_URL}/auth/register`, userData)
     return response.data
+  },
+
+  getCurrentUser: async () => {
+    const response = await axios.get(`${API_BASE_URL}/auth/me`)
+    return response.data
   }
 }

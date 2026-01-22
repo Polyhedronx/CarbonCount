@@ -29,6 +29,9 @@ export const useAuthStore = defineStore('auth', {
         // 设置axios默认header
         axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
 
+        // 获取用户信息
+        await this.fetchUser()
+
         return { success: true }
       } catch (error) {
         console.error('Login failed:', error)
@@ -36,6 +39,17 @@ export const useAuthStore = defineStore('auth', {
           success: false,
           error: error.response?.data?.detail || '登录失败'
         }
+      }
+    },
+
+    async fetchUser() {
+      try {
+        const userData = await authAPI.getCurrentUser()
+        this.user = userData
+      } catch (error) {
+        console.error('Failed to fetch user:', error)
+        // 如果获取用户信息失败，清除token
+        this.logout()
       }
     },
 
@@ -64,12 +78,14 @@ export const useAuthStore = defineStore('auth', {
       delete axios.defaults.headers.common['Authorization']
     },
 
-    initializeAuth() {
+    async initializeAuth() {
       const token = localStorage.getItem('token')
       if (token) {
         this.token = token
         this.isAuthenticated = true
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        // 获取用户信息
+        await this.fetchUser()
       }
     }
   }

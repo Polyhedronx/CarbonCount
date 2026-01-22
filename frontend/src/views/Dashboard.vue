@@ -227,7 +227,8 @@ export default {
       try {
         const newStatus = zone.status === 'active' ? 'inactive' : 'active'
         await zonesAPI.updateZone(zone.id, { status: newStatus })
-        zone.status = newStatus
+        // 重新加载列表以获取最新的统计数据
+        await loadZones()
         ElMessage.success(`监测区已${newStatus === 'active' ? '启动' : '停止'}`)
       } catch (error) {
         console.error('更新状态失败:', error)
@@ -246,7 +247,8 @@ export default {
           inputErrorMessage: '名称长度必须在2-20字符之间'
         }).then(async ({ value }) => {
           await zonesAPI.updateZone(zone.id, { name: value })
-          zone.name = value
+          // 重新加载列表以获取最新的统计数据
+          await loadZones()
           ElMessage.success('监测区更新成功')
         })
       } catch (error) {
@@ -273,12 +275,8 @@ export default {
           mapViewRef.value.removeZone(zone.id)
         }
         
-        // 从列表移除
-        const index = zones.value.findIndex(z => z.id === zone.id)
-        if (index > -1) {
-          zones.value.splice(index, 1)
-        }
-        
+        // 重新加载列表以确保数据一致性（包括统计数据的更新）
+        await loadZones()
         
         ElMessage.success('监测区已删除')
       } catch (error) {
