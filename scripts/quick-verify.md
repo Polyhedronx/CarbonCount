@@ -1,6 +1,6 @@
 # 快速验证数据库数据
 
-## 最简单的方法：直接进入数据库容器
+## 直接进入数据库容器
 
 ```powershell
 docker-compose exec db psql -U carbonuser -d carboncount
@@ -55,7 +55,7 @@ LIMIT 5;
 
 ---
 
-## 一行命令验证（不进入交互式）
+## 一行命令验证
 
 ```powershell
 # 查看监测区数量
