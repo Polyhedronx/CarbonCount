@@ -46,22 +46,22 @@
         <div class="zone-actions">
           <el-button
             size="small"
-            :type="zone.status === 'active' ? 'warning' : 'success'"
             @click.stop="$emit('toggle-status', zone)"
+            class="secondary-btn"
           >
             {{ zone.status === 'active' ? '停止监测' : '启动监测' }}
           </el-button>
           <el-button
             size="small"
-            type="primary"
             @click.stop="$emit('edit', zone)"
+            class="secondary-btn"
           >
             编辑
           </el-button>
           <el-button
             size="small"
-            type="danger"
             @click.stop="$emit('delete', zone)"
+            class="danger-btn"
           >
             删除
           </el-button>
@@ -248,5 +248,31 @@ export default {
   flex: 1;
   min-width: 60px;
   pointer-events: auto;
+}
+
+/* 次要操作按钮 - 中性灰色 */
+.zone-actions .secondary-btn {
+  background-color: #FFFFFF;
+  border-color: #DCDFE6;
+  color: #606266;
+}
+
+.zone-actions .secondary-btn:hover {
+  background-color: #F5F7FA;
+  border-color: #C0C4CC;
+  color: #606266;
+}
+
+/* 危险操作按钮 - 自定义红色 */
+.zone-actions .danger-btn {
+  background-color: #F56C6C;
+  border-color: #F56C6C;
+  color: #FFFFFF;
+}
+
+.zone-actions .danger-btn:hover {
+  background-color: #F78989;
+  border-color: #F78989;
+  color: #FFFFFF;
 }
 </style>

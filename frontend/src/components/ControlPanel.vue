@@ -1,18 +1,18 @@
 <template>
   <div class="control-panel">
     <el-button
+      v-if="!isCreating"
       type="primary"
-      :disabled="isCreating"
       @click="$emit('start-create')"
       class="action-btn"
     >
       <el-icon><Plus /></el-icon>
-      {{ isCreating ? '正在创建' : '创建监测区' }}
+      创建监测区
     </el-button>
 
     <el-button
       v-if="isCreating"
-      type="success"
+      type="primary"
       @click="$emit('finish-create')"
       class="action-btn"
     >
@@ -22,9 +22,8 @@
 
     <el-button
       v-if="isCreating"
-      type="warning"
       @click="$emit('cancel-create')"
-      class="action-btn"
+      class="action-btn cancel-btn"
     >
       <el-icon><Close /></el-icon>
       取消创建
@@ -64,5 +63,17 @@ export default {
 .action-btn {
   width: 100%;
   margin-left: 0px;
+}
+
+.cancel-btn {
+  background-color: #FFFFFF;
+  border-color: #DCDFE6;
+  color: #606266;
+}
+
+.cancel-btn:hover {
+  background-color: #F5F7FA;
+  border-color: #C0C4CC;
+  color: #606266;
 }
 </style>
