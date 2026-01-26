@@ -101,6 +101,38 @@ docker compose -f docker-compose.prod.yml up -d --build web
 
 ## 故障排查
 
+### Backend 容器启动失败（unhealthy）
+
+**症状**：`dependency failed to start: container carboncount-backend-1 is unhealthy`
+
+**排查步骤**：
+
+1. **查看 backend 日志**（最重要）：
+   ```bash
+   docker compose -f docker-compose.prod.yml logs backend
+   ```
+
+2. **检查常见问题**：
+   - **数据库连接失败**：确认 `.env` 中 `DATABASE_URL` 正确，格式为 `postgresql://用户名:密码@db:5432/数据库名`
+   - **环境变量缺失**：确认 `.env` 文件存在且包含 `DATABASE_URL`、`SECRET_KEY`、`POSTGRES_PASSWORD`
+   - **端口冲突**：检查 8000 端口是否被占用
+   - **健康检查失败**：等待更长时间（已设置为 60 秒启动期）
+
+3. **手动测试 backend 容器**：
+   ```bash
+   # 进入 backend 容器
+   docker compose -f docker-compose.prod.yml exec backend sh
+   
+   # 在容器内测试健康检查
+   curl http://localhost:8000/health
+   
+   # 测试数据库连接
+   python -c "from app.core.database import engine; engine.connect()"
+   ```
+
+4. **临时禁用健康检查（仅用于调试）**：
+   在 `docker-compose.prod.yml` 中注释掉 `healthcheck` 部分，然后重启
+
 ### 服务无法启动
 1. 检查日志：`docker compose -f docker-compose.prod.yml logs`
 2. 检查 .env 配置是否正确
@@ -111,8 +143,13 @@ docker compose -f docker-compose.prod.yml up -d --build web
 1. 确认 .env 中 `DATABASE_URL` 正确
 2. 确认数据库服务已启动：`docker compose -f docker-compose.prod.yml ps db`
 3. 查看数据库日志：`docker compose -f docker-compose.prod.yml logs db`
+4. 测试数据库连接：
+   ```bash
+   docker compose -f docker-compose.prod.yml exec db psql -U $POSTGRES_USER -d $POSTGRES_DB
+   ```
 
 ### API 502 错误
-1. 确认 backend 服务已启动
+1. 确认 backend 服务已启动且健康：`docker compose -f docker-compose.prod.yml ps`
 2. 查看 backend 日志：`docker compose -f docker-compose.prod.yml logs backend`
 3. 检查 web 容器是否能访问 backend：`docker compose -f docker-compose.prod.yml exec web ping backend`
+4. 测试 backend API：`docker compose -f docker-compose.prod.yml exec web curl http://backend:8000/health`
