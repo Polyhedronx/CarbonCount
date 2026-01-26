@@ -233,7 +233,8 @@ export default {
               weight: 2,
               opacity: 0.8,
               fillColor: '#409eff',
-              fillOpacity: 0.2
+              fillOpacity: 0.2,
+              interactive: true // 确保可交互
             }).addTo(map)
 
             // 格式化面积
@@ -262,18 +263,112 @@ export default {
                   <div><strong>总碳汇：</strong>${totalCarbon}</div>
                   <div><strong>当前NDVI：</strong>${currentNDVI}</div>
                 </div>
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e4e7ed; font-size: 11px; color: #909399; text-align: center;">
+                  点击查看详情 →
+                </div>
               </div>
             `
 
             // 绑定鼠标悬停显示气泡
             polygon.bindPopup(popupContent, {
-              closeOnClick: false,
-              autoClose: true,
+              closeOnClick: false, // 禁用自动关闭，我们手动处理
+              autoClose: false, // 禁用自动关闭，手动控制
               closeOnEscapeKey: false
+            })
+            
+            // 创建popup事件处理器（存储在polygon上，确保只创建一次）
+            const handlePopupMouseEnter = function() {
+              if (popupTimeout) {
+                clearTimeout(popupTimeout)
+                popupTimeout = null
+              }
+            }
+            
+            const handlePopupMouseLeave = function() {
+              const self = this
+              if (popupTimeout) {
+                clearTimeout(popupTimeout)
+              }
+              popupTimeout = setTimeout(() => {
+                if (currentPopup === self) {
+                  self.closePopup()
+                  currentPopup = null
+                }
+                popupTimeout = null
+              }, 150)
+            }
+            
+            // 将事件处理器绑定到polygon，确保this指向正确
+            polygon._popupMouseEnter = handlePopupMouseEnter.bind(polygon)
+            polygon._popupMouseLeave = handlePopupMouseLeave.bind(polygon)
+            
+            // 创建popup点击事件处理器
+            const handlePopupClick = function(e) {
+              // 如果正在创建区域，不触发跳转
+              if (props.isCreatingZone) {
+                return
+              }
+              
+              // 阻止事件冒泡和默认行为，防止popup关闭
+              e.stopPropagation()
+              e.preventDefault()
+              e.stopImmediatePropagation() // 阻止其他监听器执行
+              
+              // 先关闭popup
+              if (currentPopup === this) {
+                this.closePopup()
+                currentPopup = null
+              }
+              
+              // 触发跳转到详情页
+              console.log('点击popup，跳转到详情页:', zone.id, zone.name)
+              emit('zone-select', zone)
+            }
+            polygon._popupClick = handlePopupClick
+            
+            // 监听popup打开事件，添加鼠标事件监听器
+            polygon.on('popupopen', function() {
+              const popupElement = this.getPopup()?.getElement()
+              if (popupElement) {
+                // 添加鼠标进入/离开事件
+                if (this._popupMouseEnter && this._popupMouseLeave) {
+                  // 移除可能存在的旧监听器
+                  popupElement.removeEventListener('mouseenter', this._popupMouseEnter)
+                  popupElement.removeEventListener('mouseleave', this._popupMouseLeave)
+                  // 添加新监听器
+                  popupElement.addEventListener('mouseenter', this._popupMouseEnter)
+                  popupElement.addEventListener('mouseleave', this._popupMouseLeave)
+                }
+                
+                // 添加点击事件，允许点击popup跳转
+                if (this._popupClick) {
+                  // 移除可能存在的旧监听器
+                  popupElement.removeEventListener('click', this._popupClick)
+                  popupElement.removeEventListener('mousedown', this._popupClick)
+                  // 添加点击和mousedown事件（mousedown在click之前触发，更可靠）
+                  popupElement.addEventListener('mousedown', this._popupClick, true) // 使用捕获阶段
+                  popupElement.addEventListener('click', this._popupClick, true) // 使用捕获阶段
+                  // 设置popup为可点击样式
+                  popupElement.style.cursor = 'pointer'
+                  // 确保popup内容区域也是可点击的
+                  const popupContent = popupElement.querySelector('.leaflet-popup-content')
+                  if (popupContent) {
+                    popupContent.style.cursor = 'pointer'
+                  }
+                }
+              }
             })
             
             // 鼠标悬停时显示气泡
             polygon.on('mouseover', function(e) {
+              // 如果正在创建区域，不显示气泡和指针样式
+              if (props.isCreatingZone) {
+                return
+              }
+              
+              // 设置鼠标指针样式，提示可点击
+              map.getContainer().style.cursor = 'pointer'
+              
               // 清除之前的关闭定时器
               if (popupTimeout) {
                 clearTimeout(popupTimeout)
@@ -284,12 +379,33 @@ export default {
               if (currentPopup && currentPopup !== this) {
                 currentPopup.closePopup()
               }
+              
+              // 打开popup
               this.openPopup()
               currentPopup = this
             })
             
-            // 鼠标离开时关闭气泡
+            // 鼠标离开时关闭气泡（如果鼠标没有移到popup上）
             polygon.on('mouseout', function(e) {
+              // 如果正在创建区域，不处理
+              if (props.isCreatingZone) {
+                return
+              }
+              
+              // 恢复鼠标指针样式
+              map.getContainer().style.cursor = ''
+              
+              // 检查鼠标是否移到了popup上
+              const popupElement = this.getPopup()?.getElement()
+              if (popupElement) {
+                // 使用relatedTarget检查鼠标是否移到了popup
+                const relatedTarget = e.originalEvent?.relatedTarget
+                if (relatedTarget && popupElement.contains(relatedTarget)) {
+                  // 鼠标移到了popup上，不关闭
+                  return
+                }
+              }
+              
               // 延迟关闭，避免快速移动时闪烁
               const self = this
               if (popupTimeout) {
@@ -304,8 +420,17 @@ export default {
               }, 150)
             })
             
-            // 点击区域时选中（保留点击功能）
-            polygon.on('click', () => {
+            // 点击区域时跳转到详情页（仅在非创建模式下）
+            polygon.on('click', (e) => {
+              // 如果正在创建区域，不触发跳转
+              if (props.isCreatingZone) {
+                return
+              }
+              
+              // 阻止事件冒泡，避免触发地图点击事件
+              e.originalEvent?.stopPropagation()
+              
+              // 触发跳转到详情页
               emit('zone-select', zone)
             })
 

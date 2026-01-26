@@ -244,7 +244,19 @@ export default {
 
     // 跳转到监测区详情页
     const goToZoneDetail = (zone) => {
-      router.push(`/zones/${zone.id}`)
+      console.log('goToZoneDetail 被调用:', zone)
+      if (!zone || !zone.id) {
+        console.error('无效的监测区数据:', zone)
+        ElMessage.error('无法跳转到详情页：监测区数据无效')
+        return
+      }
+      router.push(`/zones/${zone.id}`).catch(err => {
+        // 忽略重复导航错误
+        if (err.name !== 'NavigationDuplicated') {
+          console.error('路由跳转失败:', err)
+          ElMessage.error('跳转失败，请稍后重试')
+        }
+      })
     }
 
     // 刷新价格
@@ -370,6 +382,7 @@ export default {
       toggleZoneStatus,
       editZone,
       deleteZone,
+      goToZoneDetail,
       onMapReady
     }
   }
