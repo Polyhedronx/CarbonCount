@@ -11,16 +11,45 @@ from .core.database import engine, get_db
 from .core.config import settings
 from .core.security import verify_token
 from .core.dependencies import get_current_user, get_current_admin
-from .models import Base, User
+from .models import Base, User, UserRole
 from .api import auth, carbon_zones, measurements, prices
 from .services.measurement_generator import generate_measurements_for_active_zones
 from .services.price_service import update_price_hourly
+from .core.security import get_password_hash
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
+
+
+def create_initial_admin_user():
+    """创建初始管理员用户（如果不存在）"""
+    db = next(get_db())
+    try:
+        # 检查管理员用户是否已存在
+        admin_user = db.query(User).filter(User.username == "admin").first()
+        if not admin_user:
+            # 创建管理员用户
+            # 密码: Admin123
+            admin_user = User(
+                username="admin",
+                email="admin@carboncount.com",
+                password_hash="$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewfBPj6fMJyHnUeK",  # Admin123
+                role=UserRole.admin,
+                is_active=True
+            )
+            db.add(admin_user)
+            db.commit()
+            logger.info("Initial admin user created: admin / Admin123")
+        else:
+            logger.info("Admin user already exists")
+    except Exception as e:
+        logger.error(f"Error creating initial admin user: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 def run_scheduler():
@@ -86,6 +115,12 @@ async def lifespan(app: FastAPI):
             pass
     _agent_log({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"backend/app/main.py:lifespan","message":"lifespan startup called","data":{},"timestamp":int(time.time()*1000)})
     # #endregion
+    
+    # 创建初始管理员用户（如果不存在）
+    try:
+        create_initial_admin_user()
+    except Exception as e:
+        logger.warning(f"Could not create initial admin user: {e}")
     
     # 启动后台任务线程
     scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
