@@ -93,18 +93,50 @@ docker compose -f docker-compose.prod.yml logs -f --tail=200
 
 ## 5. 更新发布（常用）
 
-### 5.1 拉取代码并重建
+### 5.1 快速重新部署（推荐）
+
+使用提供的部署脚本，一键完成重新部署：
+
 ```bash
 cd /opt/carboncount
+chmod +x scripts/redeploy.sh
+./scripts/redeploy.sh
+```
+
+脚本会自动：
+- 检查环境配置（.env 文件）
+- 可选拉取最新代码
+- 停止现有服务
+- 可选清理未使用的镜像
+- 重新构建并启动所有服务（web、backend、db）
+- 显示服务状态
+
+### 5.2 手动重新部署
+
+如果不想使用脚本，可以手动执行：
+
+```bash
+cd /opt/carboncount
+# 1. 拉取最新代码（如果使用 git）
 git pull
+
+# 2. 停止现有服务
+docker compose -f docker-compose.prod.yml down
+
+# 3. 重新构建并启动（推荐）
 docker compose -f docker-compose.prod.yml up -d --build
+
+# 或者只重启不重建（代码未变更时）
+# docker compose -f docker-compose.prod.yml up -d
 ```
 
 说明：
 - 后端依赖或代码变更：需要 `--build`
 - 前端变更（Vue build 输出变化）：需要 `--build`（因为 web 镜像会重新构建前端静态文件）
+- 仅配置变更（如 .env）：可以只重启，不需要 `--build`
 
-### 5.2 回滚（建议做法）
+### 5.3 回滚（建议做法）
+
 最简单的回滚方式是回退 git 版本再重建：
 
 ```bash
@@ -112,6 +144,13 @@ cd /opt/carboncount
 git log --oneline -n 10
 git checkout <commit-sha>
 docker compose -f docker-compose.prod.yml up -d --build
+```
+
+或者使用部署脚本：
+```bash
+cd /opt/carboncount
+git checkout <commit-sha>
+./scripts/redeploy.sh
 ```
 
 ---
