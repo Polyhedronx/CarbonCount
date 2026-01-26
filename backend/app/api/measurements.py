@@ -2,10 +2,11 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..core.database import get_db
-from ..core.dependencies import get_current_user
+from ..core.dependencies import get_current_user, get_current_admin
 from ..models import ZoneMeasurement, CarbonZone, User
-from ..schemas import ZoneMeasurement, ZoneMeasurementCreate, MeasurementChartData
+from ..schemas import ZoneMeasurement, ZoneMeasurementCreate, MeasurementChartData, HistoricalDataGenerateRequest, HistoricalDataGenerateResponse
 from ..services.measurement_service import get_zone_measurements_chart_data
+from ..services.measurement_generator import generate_historical_measurements_for_all_zones
 
 router = APIRouter()
 
@@ -91,3 +92,26 @@ async def create_measurement(
     db.commit()
     db.refresh(db_measurement)
     return db_measurement
+
+
+@router.post("/generate-historical", response_model=HistoricalDataGenerateResponse)
+async def generate_historical_measurements(
+    request: HistoricalDataGenerateRequest,
+    current_admin: User = Depends(get_current_admin)
+):
+    """
+    为所有活跃的监测区生成历史测量数据（管理员功能）
+    """
+    try:
+        results = generate_historical_measurements_for_all_zones(
+            days=request.days,
+            hours_interval=request.hours_interval,
+            force_regenerate=request.force_regenerate,
+            zone_ids=request.zone_ids
+        )
+        return HistoricalDataGenerateResponse(**results)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating historical data: {str(e)}"
+        )

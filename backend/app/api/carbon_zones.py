@@ -1,9 +1,11 @@
 from typing import List
 import json
+import logging
+import threading
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from shapely.geometry import Polygon
-from ..core.database import get_db
+from ..core.database import get_db, SessionLocal
 from ..core.dependencies import get_current_user
 from ..models import CarbonZone as CarbonZoneModel, ZoneStatus, User
 from ..schemas import (
@@ -13,6 +15,9 @@ from ..schemas import (
     CarbonZoneWithMeasurements,
 )
 from ..services.measurement_service import get_zone_stats
+from ..services.measurement_generator import generate_historical_measurements_for_zone
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -104,6 +109,39 @@ async def create_zone(
     db.add(db_zone)
     db.commit()
     db.refresh(db_zone)
+
+    # 在后台异步生成历史数据（不阻塞API响应）
+    def generate_history_in_background(zone_id: int):
+        """在后台线程中生成历史数据"""
+        try:
+            background_db = SessionLocal()
+            try:
+                zone = background_db.query(CarbonZoneModel).filter(
+                    CarbonZoneModel.id == zone_id
+                ).first()
+                if zone:
+                    logger.info(f"Starting historical data generation for new zone {zone_id}")
+                    count = generate_historical_measurements_for_zone(
+                        background_db, zone, days=180, hours_interval=12, force_regenerate=False
+                    )
+                    logger.info(f"Generated {count} historical measurements for zone {zone_id}")
+                else:
+                    logger.warning(f"Zone {zone_id} not found for historical data generation")
+            except Exception as e:
+                logger.error(f"Error generating historical data for zone {zone_id}: {e}")
+            finally:
+                background_db.close()
+        except Exception as e:
+            logger.error(f"Error in background thread for zone {zone_id}: {e}")
+    
+    # 启动后台线程生成历史数据
+    thread = threading.Thread(
+        target=generate_history_in_background,
+        args=(db_zone.id,),
+        daemon=True
+    )
+    thread.start()
+    logger.info(f"Started background thread to generate historical data for zone {db_zone.id}")
 
     # 返回时将坐标字符串解析为列表，避免Pydantic校验错误
     return CarbonZoneSchema(

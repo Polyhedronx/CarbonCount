@@ -201,13 +201,31 @@ export default {
 
           const newZone = await zonesAPI.createZone(zoneData)
           zones.value.push(newZone)
-          ElMessage.success('监测区创建成功')
+          ElMessage.success('监测区创建成功，正在生成历史数据...')
 
           // 清理临时数据
           cancelCreateZone()
           
-          // 重新加载区域列表以获取完整数据
+          // 立即刷新一次以显示基本信息
           await loadZones()
+          
+          // 轮询检查历史数据是否生成完成（最多等待30秒）
+          let pollCount = 0
+          const maxPolls = 15 // 15次 * 2秒 = 30秒
+          const pollInterval = setInterval(async () => {
+            pollCount++
+            await loadZones()
+            
+            // 检查新创建的监测区是否有数据了
+            const updatedZone = zones.value.find(z => z.id === newZone.id)
+            if (updatedZone && updatedZone.measurements_count > 0) {
+              clearInterval(pollInterval)
+              ElMessage.success('历史数据生成完成')
+            } else if (pollCount >= maxPolls) {
+              clearInterval(pollInterval)
+              ElMessage.info('历史数据正在后台生成中，请稍后刷新查看')
+            }
+          }, 2000) // 每2秒检查一次
         })
       } catch (error) {
         if (error !== 'cancel') {

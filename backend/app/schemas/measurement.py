@@ -50,3 +50,16 @@ class ZoneStats(BaseModel):
     average_ndvi: float
     measurements_count: int
     latest_measurement: Optional[ZoneMeasurement] = None
+
+
+class HistoricalDataGenerateRequest(BaseModel):
+    days: int = Field(default=180, ge=1, le=365, description="生成多少天的历史数据")
+    hours_interval: int = Field(default=12, ge=1, le=24, description="测量间隔（小时）")
+    force_regenerate: bool = Field(default=False, description="是否强制重新生成（删除旧数据）")
+    zone_ids: Optional[List[int]] = Field(default=None, description="指定区域ID列表，如果为None则处理所有活跃区域")
+
+
+class HistoricalDataGenerateResponse(BaseModel):
+    total_zones: int
+    total_measurements: int
+    zones: dict

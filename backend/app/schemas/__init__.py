@@ -10,5 +10,6 @@ from .carbon_zone import (
 from .measurement import (
     CarbonPrice, CarbonPriceCreate,
     ZoneMeasurement, ZoneMeasurementCreate,
-    MeasurementChartData, ZoneStats
+    MeasurementChartData, ZoneStats,
+    HistoricalDataGenerateRequest, HistoricalDataGenerateResponse
 )
